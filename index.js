@@ -6,16 +6,18 @@ var io = require('socket.io')(localServer);
 
 var SocketIOStream = require('./swarm/socketIOStream');
 var swarmHost = require('./swarm/host');
-var Server = require('./models/server');
+var Server = require('./swarm/models/server');
 
 var servers = swarmHost.get('/Servers#servers', function() {
 
     console.log('servers are', servers.list());
 });
 
-localServer.listen(4500);
+localServer.listen(5000);
 
 io.on('connection', function(socket){
+
+    console.log('on connection');
 
     var stream = new SocketIOStream(socket);
 
@@ -29,36 +31,43 @@ io.on('connection', function(socket){
 
 io.use(function(socket, next) {
 
-    var token;
+    var id, token;
     var handshake = socket.handshake;
 
+    console.log('on auth');
     if(handshake.headers && handshake.headers.cookie) {
         // Pull out the cookies from the data
         var cookies = cookie_reader.parse(handshake.headers.cookie);
         token = cookies.token;
+        id = cookies.id;
     } else if (handshake.query && handshake.query.token) {
         token = handshake.query.token;
+        id = handshake.query.id;
     } else {
         next(new Error('Unauthorized: No token was provided'));
     }
 
-    console.log('Authorisation token', token);
+    console.log('Authorisation id token', id, token);
     //console.log('socket sessionID is', sessionID);
-    var server = _.find(servers.list(), {token: token});
-    if (!server) {
+    var authenticated = servers.authenticate(id, token);
+
+    console.log('authenticated ', authenticated );
+
+    if (!authenticated) {
         return next(new Error('Unauthorized: Token is invalid'));
+    } else {
+        return next();
     }
 });
 
 // Bootstrap
-var testServer = _.find(servers.list(), {token: 'test'});
+var testServer = _.find(servers.list(), {id: 'dev-1'});
 if (!testServer) {
     var testServer = new Server();
     testServer.on('.init', function () {
         if (this._version!=='!0') { return; };
-        testServer.set({
-            token: 'testing'
-        });
+        testServer.set({id: 'dev-1'});
+        testServer.setToken('testing');
         servers.addObject(testServer);
     });
 }

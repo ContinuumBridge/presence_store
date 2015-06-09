@@ -19,7 +19,7 @@ var argv = require('minimist')(args, {
     },
     boolean: ['debug'],
     default: {
-        models: './common/swarm/groove/models/,./common/swarm/harmony/models/',
+        models: './swarm/models/',
         store: '.swarm',
         port: 8000,
         debug: false
