@@ -10,6 +10,7 @@ function SocketStream(socket) {
     socket.on('close', function () { ln.close && ln.close(); });
 
     socket.on('swarm', function (msg) {
+        console.log('swarm message', msg);
         try {
             ln.data && ln.data(msg);
         } catch (ex) {

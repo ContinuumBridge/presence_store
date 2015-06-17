@@ -8,9 +8,11 @@ var SocketIOStream = require('./swarm/socketIOStream');
 var swarmHost = require('./swarm/host');
 var Server = require('./swarm/models/server');
 
+//console.log('swarmHost', swarmHost);
+
 var servers = swarmHost.get('/Servers#servers', function() {
 
-    console.log('servers are', servers.list());
+    //console.log('servers are', servers.list());
 });
 
 localServer.listen(5000);
@@ -61,14 +63,14 @@ io.use(function(socket, next) {
 });
 
 // Bootstrap
-var testServer = _.find(servers.list(), {id: 'dev-1'});
-if (!testServer) {
-    var testServer = new Server();
-    testServer.on('.init', function () {
-        if (this._version!=='!0') { return; };
-        testServer.set({id: 'dev-1'});
-        testServer.setToken('testing');
-        servers.addObject(testServer);
-    });
-}
+var testServer = swarmHost.get('/Server#dev_1', function() {
+    if (this._version!=='!0') { return; };
+    //testServer.set({id: 'dev-1'});
+    testServer.setToken('testing');
+    servers.addObject(testServer);
+});
 
+testServer.on({deliver: function(spec) {
+    console.log('testServer on', spec);
+    testServer.sessions.target(swarmHost).list();
+}});

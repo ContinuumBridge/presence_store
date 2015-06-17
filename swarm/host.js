@@ -4,6 +4,7 @@
 // starts a WebSocket localServer at a port. Serves some static content,
 // although I'd recomment to shield it with nginx.
 var Swarm = require('swarm');
+var Spec = Swarm.Spec;
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
@@ -32,8 +33,20 @@ Swarm.env.debug = argv.debug;
 var fileStorage = new Swarm.FileStorage(argv.store);
 
 // create Swarm Host
-var swarmHost = new Swarm.Host('swarm~nodejs', 0, fileStorage);
+var swarmHost = new Swarm.Host('presence_store', 0, fileStorage);
 Swarm.env.localhost = swarmHost;
+
+/*
+swarmHost.on({deliver: function(specString, two, three) {
+
+    var spec = new Spec(specString);
+    console.log('swarmHost on', spec);
+    console.log('swarmHost on', two);
+    console.log('swarmHost on', three);
+    console.log('swarmHost on', spec.filter('.'));
+    console.log('swarmHost on', spec.filter('#'));
+}});
+*/
 
 process.on('SIGTERM', onExit);
 process.on('SIGINT', onExit);
@@ -77,7 +90,8 @@ modelPathList.split(/[:;,]/g).forEach(function (modelPath) {
         var modpath = path.join(modelPath, modelFile);
         var fn = require(modpath);
         if (fn.constructor !== Function) { continue; }
-        if (fn.extend !== Swarm.Syncable.extend) { continue; }
+        //if (fn.extend !== Swarm.Syncable.extend) { continue; }
+        if (!fn.extend) { continue; }
         console.log('Model loaded', fn.prototype._type, ' at ', modpath);
     }
 });
