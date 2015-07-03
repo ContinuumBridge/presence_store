@@ -20,6 +20,7 @@ var argv = require('minimist')(args, {
     },
     boolean: ['debug'],
     default: {
+        //models: './swarm/models/',
         models: './swarm/models/',
         store: '.swarm',
         port: 8000,
@@ -33,7 +34,7 @@ Swarm.env.debug = argv.debug;
 var fileStorage = new Swarm.FileStorage(argv.store);
 
 // create Swarm Host
-var swarmHost = new Swarm.Host('presence_store', 0, fileStorage);
+var swarmHost = new Swarm.Host('swarm~presence_store', 0, fileStorage);
 Swarm.env.localhost = swarmHost;
 
 /*
@@ -90,10 +91,12 @@ modelPathList.split(/[:;,]/g).forEach(function (modelPath) {
         var modpath = path.join(modelPath, modelFile);
         var fn = require(modpath);
         if (fn.constructor !== Function) { continue; }
-        //if (fn.extend !== Swarm.Syncable.extend) { continue; }
+        if (fn.extend !== Swarm.Syncable.extend) { continue; }
         if (!fn.extend) { continue; }
         console.log('Model loaded', fn.prototype._type, ' at ', modpath);
     }
 });
+
+//console.log('Syncable types', Swarm.Syncable.types);
 
 module.exports = swarmHost;
