@@ -27,6 +27,8 @@ servers = swarmHost.get('/Servers#servers', function() {
 io.on('connection', function(socket){
 
     console.log('on connection');
+    var server = socket.server;
+    console.log('on connection server', server);
 
     var stream = new SocketIOStream(socket);
 
@@ -35,7 +37,9 @@ io.on('connection', function(socket){
     socket.on('message', function(message) {
         console.log('received message', message)
     });
-    socket.on('disconnect', function(){});
+    socket.on('disconnect', function(){
+        server.sessions.target().disconnectAll();
+    });
 });
 
 io.use(function(socket, next) {
@@ -60,7 +64,7 @@ io.use(function(socket, next) {
     //console.log('socket sessionID is', sessionID);
     //var authenticated = servers.authenticate(id, token);
 
-    var server = swarmHost.get('/Server#' + id);
+    var server = socket.server = swarmHost.get('/Server#' + id);
     server.on('.init', function() {
 
         var authenticated = server.authenticate(token);

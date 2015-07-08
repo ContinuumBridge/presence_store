@@ -12,7 +12,8 @@
     "underscore": "^1.8.3",
     "http": "0.0.0",
     "winston": "^1.0.0",
-    "replify": "^1.2.0"
+    "replify": "^1.2.0",
+    "q": "^1.4.1"
   },
   "devDependencies": {},
   "scripts": {
