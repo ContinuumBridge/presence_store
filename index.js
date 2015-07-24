@@ -3,6 +3,11 @@ var express = require('express');
 var app = express();
 logger = require('./logger');
 
+/*
+var fsExtra = require('fs-extra');
+fsExtra.emptyDirSync('./.swarm');
+*/
+
 var localServer = require('http').Server(app);
 var io = require('socket.io')(localServer);
 localServer.listen(5000);
@@ -79,24 +84,19 @@ io.use(function(socket, next) {
 });
 
 // Bootstrap
-//testServer = swarmHost.get('/Server#dev_1');
-testServer = new Server('dev_1');
+stagingServer = swarmHost.get('/Server#staging_1');
 
-testServer.on('.init', function() {
+stagingServer.on('.init', function() {
     console.log('testServer init', this._version);
+    stagingServer.setToken('ed71d78e-897c-4a4b-9504-722bcf2ec454');
+    servers.addObject(stagingServer);
     if (this._version!=='!0') { return; };
     //testServer.set({id: 'dev-1'});
-    testServer.setToken('testing');
-    servers.addObject(testServer);
-});
-
-testServer.on(function(spec, val, source) {
-    console.log('testServer on', spec, val, source);
 });
 
 /*
-testServer.on({deliver: function(spec) {
-    console.log('testServer on', spec);
-    //testServer.sessions.target(swarmHost).list();
-}});
+stagingServer.on('.set', function(spec, val, source) {
+    console.log('testServer on', spec, val);//, source);
+    console.log('testServer token', testServer.token);//, source);
+});
 */

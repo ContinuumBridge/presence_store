@@ -31,7 +31,7 @@ var Server = Model.extend('Server', {
         }
     },
 
-    addSession: function(session, client) {
+    connectSession: function(config, session, client) {
 
         var self = this;
         var sessionDeferred = Q.defer();
@@ -42,30 +42,21 @@ var Server = Model.extend('Server', {
             //client.subscribees.target()
 
             console.log('addSession client config', client.config);
-            client.addSession(session);
+            client.addSession(config, session);
 
             session.on('.init', function() {
-                var clientSessions = client.sessions.target();
-                //logger.log('debug', 'clientSessions ', clientSessions);
-                //logger.log('debug', 'clientSessions ', Object.keys(clientSessions));
-                clientSessions.addObject(session);
-                //logger.log('debug', 'clientSessions list', clientSessions.list());
-                //client.sessions.call('addObject', [session], function(err) { console.log('session added', err) });
 
-                logger.log('debug', 'server addSession self', Object.keys(self));
-                //logger.log('debug', 'serverSessions ', self.sessions);
+                var clientSessions = client.sessions.target();
+                clientSessions.addObject(session);
+
                 var serverSessions = self.sessions.target();
-                logger.log('debug', 'server addSession serverSessions', Object.keys(serverSessions));
                 serverSessions.addObject(session);
 
-                //logger.log('debug', 'server addSession serverSessions list', serverSessions.list());
-                //client.sessions.call('addObject', [session], function(err) { console.log('session added', err) });
-
                 session.set({
+                    connected: 'true',
                     client: client,
                     server: localServer
                 });
-                //client.sessions.call('list', [], function(list) { console.log('list', list) });
                 sessionDeferred.resolve();
             });
         });
@@ -73,12 +64,15 @@ var Server = Model.extend('Server', {
         return sessionDeferred.promise;
     },
 
+    /*
     destroySession: function(session) {
         session.destroy();
     },
+    */
 
     clearSessions: function() {
 
+        console.log('server clear sessions');
         this.sessions.target().clearAll();
     },
 

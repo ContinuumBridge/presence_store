@@ -1,9 +1,11 @@
 
 var _ = require('underscore');
-var Model = require('swarm').Model;
-var Ref = require('swarm').Syncable.Ref;
+var Q = require('q');
+var Swarm = require('swarm');
+var Model = Swarm.Model;
+var Ref = Swarm.Syncable.Ref;
 var format = require('util').format;
-//var RelationalModel = require('./relationalModel');
+var ProxyListener = require('./ProxyListener');
 
 module.exports = Model.extend('Client', {
 
@@ -29,37 +31,30 @@ module.exports = Model.extend('Client', {
                 }
             });
 
-            console.log('debug', 'Client init cbid', this._id);
             if (this.sessions.ref == '#0') {
                 relations.sessions = swarmHost.get(format('/Sessions#%s', this._id));
             }
 
-            //logger.log('debug', 'Client init sessions', collections['sessions']._id);
             this.set(relations);
-            /*
-            this.set({
-                sessions: sessions
-            });
-            */
+
+            if (!this._publisheeProxy) {
+                this._publisheeProxy = new ProxyListener();
+                this.publishees.target().onObjectEvent(this._publisheeProxy);
+            }
         }
     },
-    /*
-    relations: {
-        sessions: {
-            collection: 'Sessions'
-        },
-        publishees: {
-            collection: 'Clients'
-        },
-        subscribees: {
-            collection: 'Clients'
+
+    onPublisheeEvent: function (callback) {
+        // if hack
+        if (this._publisheeProxy) {
+            this._publisheeProxy.owner = this;
+            this._publisheeProxy.on(callback);
         }
     },
-    */
 
-    addSession: function(session) {
+    addSession: function(config, session) {
 
-        var config = this.config;
+        //var config = this.config;
 
         this.set({
             cbid: config.cbid,
@@ -76,15 +71,67 @@ module.exports = Model.extend('Client', {
         this.sessions.target().removeObject(session);
     },
 
-    findSubscription: function(subscription) {
+    find: function() {
 
-        this.subscriptions.fill(swarmHost);
-        return this.subscriptions.target().get(format('/Client#%s', subscription));
+    },
+
+    findSubscription: function(subscriptionString) {
+
+        var self = this;
+        var deferred = Q.defer();
+        if (!this.version) {
+
+            this.on('.init', function() {
+
+                var subscription = self.subscriptions.target().get(format('/Client#%s', subscriptionString));
+                deferred.resolve(subscription);
+            });
+        } else {
+
+            var subscription = self.subscriptions.target().get(format('/Client#%s', subscriptionString));
+            deferred.resolve(subscription);
+            //return this.subscriptions.target().get(format('/Client#%s', subscription));
+        }
+        return deferred.promise;
+    },
+
+    getClients: function(type) {
+
+        var self = this;
+        var deferred = Q.defer();
+
+        var getIDs = function(list) {
+
+            var itemIDs = _.map(list, function(item) {
+                return item._id;
+            });
+            console.log('itemIDs are', itemIDs);
+            return itemIDs;
+        }
+
+        if (!this._version) {
+
+            this.on('.init', function() {
+
+                var clientIDs = getIDs(this[type].target().list());
+                console.log('clientIDs .init are', clientIDs);
+                deferred.resolve(clientIDs);
+            });
+        } else {
+
+            var clientIDs = getIDs(this[type].target().list());
+            console.log('clientIDs are', clientIDs);
+            deferred.resolve(clientIDs);
+        }
+        return deferred.promise;
     },
 
     getPublishees: function() {
-        this.publishees.fill(swarmHost);
-        return this.publishees.target().list();
+        return this.getClients('publishees');
+    },
+
+    getSubscriptions: function() {
+        return this.getClients('subscriptions');
     }
 });
 
