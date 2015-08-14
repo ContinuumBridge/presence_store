@@ -12,6 +12,7 @@ module.exports = Model.extend('Client', {
     defaults: {
         cbid: '',
         email: '',
+        connected: 'false',
         sessions: {type:Ref, value:'#0'},
         publishees: {type:Ref, value:'#0'},
         subscriptions: {type:Ref, value:'#0'}
@@ -21,7 +22,7 @@ module.exports = Model.extend('Client', {
 
         init: function(spec, val, src) {
 
-            console.log('Client init');
+            //console.log('Client init');
             var self = this;
             var relations = {};
 
@@ -37,13 +38,25 @@ module.exports = Model.extend('Client', {
 
             this.set(relations);
 
+            var sessions = this.sessions.target();
+            /*
+            var boundUpdateConnected = self.updateConnected.bind(self);
+            sessions.on('.init', function(spec, value) {
+                //console.log('sessions on init', spec, value);
+                //console.log('sessions init this _proxy', this._proxy);
+                sessions.on('.change', boundUpdateConnected);
+            });
+            */
+            /*
             if (!this._publisheeProxy) {
                 this._publisheeProxy = new ProxyListener();
                 this.publishees.target().onObjectEvent(this._publisheeProxy);
             }
+            */
         }
     },
 
+    /*
     onPublisheeEvent: function (callback) {
         // if hack
         if (this._publisheeProxy) {
@@ -51,6 +64,7 @@ module.exports = Model.extend('Client', {
             this._publisheeProxy.on(callback);
         }
     },
+    */
 
     addSession: function(config, session) {
 
@@ -61,18 +75,28 @@ module.exports = Model.extend('Client', {
             email: config.email
         });
 
+        this.set({
+            connected: session.connected
+        });
+
         this.publishees.target(swarmHost).update(config.publishees);
         this.subscriptions.target(swarmHost).update(config.subscriptions);
-
         this.sessions.target(swarmHost).addObject(session);
     },
 
-    destroySession: function(session) {
-        this.sessions.target().removeObject(session);
-    },
+    updateConnected: function(spec, value) {
 
-    find: function() {
+        var self = this;
 
+        console.log('updateConnected', spec, value);
+
+        var sessions = this.sessions.target().list();
+        //sessions.removeObject(session);
+        var connected = 'false';
+        _.each(sessions, function(session) {
+            if (session.connected == 'true') connected = 'true';
+        });
+        if (connected == 'false') this.set({connected: 'false'});
     },
 
     findSubscription: function(subscriptionString) {
@@ -105,7 +129,6 @@ module.exports = Model.extend('Client', {
             var itemIDs = _.map(list, function(item) {
                 return item._id;
             });
-            console.log('itemIDs are', itemIDs);
             return itemIDs;
         }
 
@@ -114,13 +137,11 @@ module.exports = Model.extend('Client', {
             this.on('.init', function() {
 
                 var clientIDs = getIDs(this[type].target().list());
-                console.log('clientIDs .init are', clientIDs);
                 deferred.resolve(clientIDs);
             });
         } else {
 
             var clientIDs = getIDs(this[type].target().list());
-            console.log('clientIDs are', clientIDs);
             deferred.resolve(clientIDs);
         }
         return deferred.promise;

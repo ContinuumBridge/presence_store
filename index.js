@@ -33,7 +33,7 @@ io.on('connection', function(socket){
 
     console.log('on connection');
     var server = socket.server;
-    console.log('on connection server', server);
+    //console.log('on connection server', server);
 
     var stream = new SocketIOStream(socket);
 
